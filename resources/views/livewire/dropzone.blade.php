@@ -126,8 +126,10 @@
                 uploadedChunks: [],
                 isDragging: false,
                 isLoading: false,
+                isCancelled: false,
 
                 onChange(e) {
+                    this.isCancelled = false
                     const files = [...e.target.files];
 
                     files.forEach((file) => {
@@ -138,6 +140,7 @@
                     this.uploadChunks()
                 },
                 onDrop(e) {
+                    this.isCancelled = false
                     this.isDragging = false
 
                     const files = [...e.dataTransfer.files]
@@ -150,8 +153,12 @@
                     this.uploadChunks()
                 },
                 cancelUpload() {
+                    this.isCancelled = true
+
                     _this.cancelUpload('chunk')
 
+                    this.chunks = [];
+                    this.uploadedChunks = [];
                     this.isLoading = false
                 },
                 removeUpload(tmpFilename) {
@@ -182,7 +189,11 @@
                         this.uploadedChunks[fileId] = 0;
 
                         for (const chunk of fileChunks) {
+                            if (this.isCancelled) return;
+
                             const onUploadComplete = () => {
+                                if (this.isCancelled) return;
+
                                 this.uploadedChunks[fileId]++;
 
                                 // If all chunks are uploaded, merge them

@@ -18,39 +18,34 @@ it('accepts and sets multiple parameter correctly', function () {
         ->assertSet('multiple', true);
 });
 
-it('can upload file', function () {
-    $dropzone = Livewire\Livewire::test(Dropzone::class);
+it('can upload valid file', function () {
+    $dropzone = Livewire\Livewire::test(Dropzone::class, [
+        'rules' => ['mimes:pdf'],
+    ]);
 
     $uuid = $dropzone->get('uuid');
 
+    // valid chunk
+    $chunk = 'foo.pdf.1.part';
+
     $dropzone
-        ->set('upload', UploadedFile::fake()->image('foo.png'))
+        ->set('chunk', UploadedFile::fake()->create($chunk))
+        ->call('mergeChunks')
         ->assertDispatched("$uuid:fileAdded");
 });
 
-it('accepts and sets files parameter correctly', function () {
-    $file1 = UploadedFile::fake()->image('file1.png');
-    $file2 = UploadedFile::fake()->image('file2.jpg');
+it('can not upload invalid file', function () {
+    $dropzone = Livewire\Livewire::test(Dropzone::class, [
+        'rules' => ['mimes:pdf'],
+    ]);
 
-    $files = [
-        [
-            'name' => $file1->getClientOriginalName(),
-            'path' => $file1->path(),
-            'extension' => $file1->extension(),
-            'temporaryUrl' => $file1->path(),
-            'size' => $file1->getSize(),
-            'tmpFilename' => $file1->getFilename(),
-        ],
-        [
-            'name' => $file2->getClientOriginalName(),
-            'path' => $file2->path(),
-            'extension' => $file2->extension(),
-            'temporaryUrl' => $file2->path(),
-            'size' => $file2->getSize(),
-            'tmpFilename' => $file2->getFilename(),
-        ],
-    ];
+    $uuid = $dropzone->get('uuid');
 
-    Livewire\Livewire::test(Dropzone::class, ['files' => $files])
-        ->assertSet('files', $files);
+    // invalid chunk
+    $chunk = 'foo.png.1.part';
+
+    $dropzone
+        ->set('chunk', UploadedFile::fake()->create($chunk))
+        ->call('mergeChunks')
+        ->assertNotDispatched("$uuid:fileAdded");
 });

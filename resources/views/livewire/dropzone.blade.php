@@ -73,18 +73,13 @@
                     <p class="mb-0">{{ Str::upper($this->mimes) }}</p>
                 @endif
             </div>
-            <div x-show="isLoading" class="dz-flex dz-flex-col dz-items-end dz-gap-1 dz-w-full">
-                <div class="dz-flex dz-gap-1 dz-items-center">
-                    <svg aria-hidden="true" width="15" height="15" class="dz-text-gray-200 dz-animate-spin dz-dark:text-gray-700 dz-fill-gray-800 dz-dark:fill-gray-200" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="currentColor"/>
-                        <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentFill"/>
-                    </svg>
-                    <span class="dz-sr-only">Chargement...</span>
-                    <div @click="cancelUpload" class="dz-text-xs dz-md:text-sm dz-text-gray-800 dz-dark:text-gray-200 dz-hover:cursor-pointer dz-underline">Annuler l'envoi</div>
-                </div>
-                <div class="dz-w-full dz-bg-gray-200 dz-rounded-full dz-h-1.5 dz-dark:bg-gray-700">
-                    <div class="dz-bg-blue-600 dz-h-1.5 dz-rounded-full dz-transition-all dz-duration-500" :style="{ width: progress + '%' }"></div>
-                </div>
+            <div x-show="isLoading" class="dz-flex dz-gap-1 dz-items-center">
+                <svg aria-hidden="true" width="15" height="15" class="dz-text-gray-200 dz-animate-spin dz-dark:text-gray-700 dz-fill-gray-800 dz-dark:fill-gray-200" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="currentColor"/>
+                    <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentFill"/>
+                </svg>
+                <span class="dz-sr-only">Chargement...</span>
+                <div @click="cancelUpload" class="dz-text-xs dz-md:text-sm dz-text-gray-800 dz-dark:text-gray-200 dz-hover:cursor-pointer dz-underline">Annuler l'envoi</div>
             </div>
         </div>
 
@@ -128,11 +123,10 @@
             return ({
                 chunks: [],
                 totalChunks: 0,
-                uploadedChunks: {},
+                uploadedChunks: [],
                 isDragging: false,
                 isLoading: false,
                 isCancelled: false,
-                progress: 0,
 
                 onChange(e) {
                     this.isCancelled = false
@@ -163,14 +157,9 @@
 
                     _this.cancelUpload('chunk')
 
-                    this.chunks = {};
-                    this.uploadedChunks = {};
+                    this.chunks = [];
+                    this.uploadedChunks = [];
                     this.isLoading = false
-                    this.progress = 0
-
-                    if (this.$refs.input) {
-                        this.$refs.input.value = ''
-                    }
                 },
                 removeUpload(tmpFilename) {
                     // Dispatch an event to remove the temporarily uploaded file
@@ -191,10 +180,9 @@
                         start = end;
                     }
                 },
-                uploadChunks() {
+                async uploadChunks() {
                     this.isLoading = true
                     this.isCancelled = false
-                    this.progress = 0
 
                     for(const [fileId, fileChunks] of Object.entries(this.chunks)) {
                         if (this.uploadedChunks[fileId] !== undefined) continue;
@@ -208,8 +196,6 @@
                                 if (this.isCancelled) return;
 
                                 this.uploadedChunks[fileId]++;
-
-                                this.updateProgress();
 
                                 // If all chunks are uploaded, merge them
                                 if (this.uploadedChunks[fileId] === this.chunks[fileId].length) {
@@ -232,24 +218,14 @@
                                 console.error('livewire-dropzone upload error', error);
                             };
 
-                            const onUploading = (progress) => {
+                            const onUploading = () => {
                                 this.isLoading = true;
-                                // progress is for the current chunk upload, we could factor it in
-                                // but the chunk-level progress is already handled by updateProgress (by counting finished chunks)
                             };
 
                             const args = ['chunk', chunk, onUploadComplete, onUploadError, onUploading, { headers: { 'X-File-Id': fileId } }];
 
                             _this.upload(...args);
                         }
-                    }
-                },
-                updateProgress() {
-                    const totalChunks = Object.values(this.chunks).reduce((acc, chunks) => acc + chunks.length, 0);
-                    const uploadedChunks = Object.values(this.uploadedChunks).reduce((acc, count) => acc + count, 0);
-
-                    if (totalChunks > 0) {
-                        this.progress = Math.round((uploadedChunks / totalChunks) * 100);
                     }
                 },
             });

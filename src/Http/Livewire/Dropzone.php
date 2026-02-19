@@ -60,7 +60,13 @@ class Dropzone extends Component
      */
     public function updatedChunk($value): void
     {
-        $this->chunks[] = $value;
+        $fileId = request()->header('X-File-Id');
+
+        if ($fileId) {
+            $this->chunks[$fileId][] = $value;
+        } else {
+            $this->chunks[] = $value;
+        }
     }
 
     /**
@@ -68,31 +74,72 @@ class Dropzone extends Component
      *
      * @throws \Livewire\Features\SupportFileUploads\FileNotPreviewableException
      */
-    public function mergeChunks(): void
+    public function mergeChunks(string $fileId = null): void
     {
         $disk = FileUploadConfiguration::disk();
-        $path = null;
 
-        foreach ($this->chunks as $chunk) {
-            $path = Storage::disk($disk)->putFileAs('/'.FileUploadConfiguration::path(), $chunk, TemporaryUploadedFile::generateHashNameWithOriginalNameEmbedded(UploadedFile::fake()->create(preg_replace('/\.\d+\.part/', '', $chunk->getClientOriginalName()))));
+        $chunks = $fileId && isset($this->chunks[$fileId]) 
+            ? $this->chunks[$fileId] 
+            : $this->chunks;
+
+        if (empty($chunks)) {
+            return; // Rien à merger
         }
 
-        $path = File::basename($path);
+        // 1) Déduire le nom original (sans ".N.part") à partir du premier chunk
+        $originalName = preg_replace('/\.\d+\.part$/', '', $chunks[0]->getClientOriginalName());
 
-        $this->file = TemporaryUploadedFile::createFromLivewire($path);
+        // 2) Générer un nom Livewire (même logique que votre code) pour le fichier final
+        $finalBasename = TemporaryUploadedFile::generateHashNameWithOriginalNameEmbedded(
+            UploadedFile::fake()->create($originalName)
+        );
+
+        $relativeDir = trim(FileUploadConfiguration::path(), '/');
+        $relativePath = $relativeDir . '/' . $finalBasename; // p.ex. livewire-tmp/XYZ…
+        $absolutePath = Storage::disk($disk)->path($relativePath);
+
+        // S’assurer que le dossier existe
+        if (! File::exists(dirname($absolutePath))) {
+            File::makeDirectory(dirname($absolutePath), 0755, true);
+        }
+
+        // 3) Trier les chunks par numéro pour garantir l’ordre
+        usort($chunks, function ($a, $b) {
+            $na = (int) (preg_match('/\.(\d+)\.part$/', $a->getClientOriginalName(), $ma) ? $ma[1] : 0);
+            $nb = (int) (preg_match('/\.(\d+)\.part$/', $b->getClientOriginalName(), $mb) ? $mb[1] : 0);
+            return $na <=> $nb;
+        });
+
+        // 4) (Re)créer le fichier final et y concaténer chaque chunk
+        if (File::exists($absolutePath)) {
+            File::delete($absolutePath);
+        }
+
+        foreach ($chunks as $chunk) {
+            // Lire le contenu binaire du chunk et l’ajouter au fichier final
+            file_put_contents($absolutePath, file_get_contents($chunk->getRealPath()), FILE_APPEND);
+        }
+
+        // 5) Recréer l’instance temporaire Livewire sur le fichier final
+        $this->file = TemporaryUploadedFile::createFromLivewire(File::basename($relativePath));
 
         try {
             $this->validate();
         } catch (ValidationException $e) {
-            // If the upload validation fails, we trigger the following event
             $this->dispatch("{$this->uuid}:uploadError", $e->getMessage());
-
             return;
         }
 
         $this->dispatchTempFileAddedEvent($this->file);
 
-        $this->reset('chunks', 'error');
+        // Nettoyage d’état
+        if ($fileId) {
+            unset($this->chunks[$fileId]);
+        } else {
+            $this->reset('chunks');
+        }
+
+        $this->reset('error');
     }
 
     /**

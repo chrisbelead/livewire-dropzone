@@ -130,7 +130,10 @@
                 onChange(e) {
                     const files = [...e.target.files];
 
-                    files.forEach((file, index) => this.createChunks(index, file));
+                    files.forEach((file) => {
+                        const fileId = Math.random().toString(36).substring(2, 9);
+                        this.createChunks(fileId, file);
+                    });
 
                     this.uploadChunks()
                 },
@@ -139,7 +142,10 @@
 
                     const files = [...e.dataTransfer.files]
 
-                    files.forEach((file, index) => this.createChunks(index, file));
+                    files.forEach((file) => {
+                        const fileId = Math.random().toString(36).substring(2, 9);
+                        this.createChunks(fileId, file);
+                    });
 
                     this.uploadChunks()
                 },
@@ -152,10 +158,10 @@
                     // Dispatch an event to remove the temporarily uploaded file
                     _this.dispatch(uuid + ':fileRemoved', { tmpFilename })
                 },
-                createChunks(index, file) {
+                createChunks(fileId, file) {
                     let start = 0;
                     const chunkSize = @js($chunkSize);
-                    this.chunks[index] = [];
+                    this.chunks[fileId] = [];
 
                     // Split file into chunks and add a name property to each blob
                     while (start < file.size) {
@@ -163,32 +169,39 @@
                         const chunk = file.slice(start, end);
                         const chunkNo = Math.ceil(start / chunkSize) + 1;
                         chunk.name = `${file.name}.${chunkNo}.part`;
-                        this.chunks[index].push(chunk);
+                        this.chunks[fileId].push(chunk);
                         start = end;
                     }
                 },
                 async uploadChunks() {
                     this.isLoading = true
 
-                    for(const [index, file] of Object.entries(this.chunks)) {
-                        this.uploadedChunks[index] = 0;
+                    for(const [fileId, fileChunks] of Object.entries(this.chunks)) {
+                        if (this.uploadedChunks[fileId] !== undefined) continue;
 
-                        for (const chunk of file) {
+                        this.uploadedChunks[fileId] = 0;
+
+                        for (const chunk of fileChunks) {
                             const onUploadComplete = () => {
-                                this.uploadedChunks[index]++;
+                                this.uploadedChunks[fileId]++;
 
                                 // If all chunks are uploaded, merge them
-                                if (this.uploadedChunks[index] === this.chunks[index].length) {
-                                    this.isLoading = false;
-                                    this.chunks[index] = [];
+                                if (this.uploadedChunks[fileId] === this.chunks[fileId].length) {
+                                    _this.call('mergeChunks', fileId);
 
-                                    _this.call('mergeChunks');
+                                    delete this.chunks[fileId];
+                                    delete this.uploadedChunks[fileId];
+
+                                    if (Object.keys(this.chunks).length === 0) {
+                                        this.isLoading = false;
+                                    }
                                 }
                             };
 
                             const onUploadError = (error) => {
                                 this.isLoading = false;
-                                this.chunks[index] = [];
+                                delete this.chunks[fileId];
+                                delete this.uploadedChunks[fileId];
 
                                 console.error('livewire-dropzone upload error', error);
                             };
@@ -197,7 +210,7 @@
                                 this.isLoading = true;
                             };
 
-                            const args = ['chunk', chunk, onUploadComplete, onUploadError, onUploading];
+                            const args = ['chunk', chunk, onUploadComplete, onUploadError, onUploading, { headers: { 'X-File-Id': fileId } }];
 
                             _this.upload(...args);
                         }

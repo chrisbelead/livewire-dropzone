@@ -182,6 +182,7 @@
                 },
                 async uploadChunks() {
                     this.isLoading = true
+                    this.isCancelled = false
 
                     for(const [fileId, fileChunks] of Object.entries(this.chunks)) {
                         if (this.uploadedChunks[fileId] !== undefined) continue;

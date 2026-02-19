@@ -121,9 +121,9 @@
     <script>
         Alpine.data('dropzone', ({ _this, uuid }) => {
             return ({
-                chunks: [],
+                chunks: {},
                 totalChunks: 0,
-                uploadedChunks: [],
+                uploadedChunks: {},
                 isDragging: false,
                 isLoading: false,
                 isCancelled: false,
@@ -155,11 +155,19 @@
                 cancelUpload() {
                     this.isCancelled = true
 
-                    _this.cancelUpload('chunk')
+                    try {
+                        _this.cancelUpload('chunk')
+                    } catch (e) {
+                        // ignore if no upload in progress
+                    }
 
-                    this.chunks = [];
-                    this.uploadedChunks = [];
+                    this.chunks = {};
+                    this.uploadedChunks = {};
                     this.isLoading = false
+
+                    if (this.$refs.input) {
+                        this.$refs.input.value = ''
+                    }
                 },
                 removeUpload(tmpFilename) {
                     // Dispatch an event to remove the temporarily uploaded file
@@ -184,48 +192,72 @@
                     this.isLoading = true
                     this.isCancelled = false
 
-                    for(const [fileId, fileChunks] of Object.entries(this.chunks)) {
+                    const fileIds = Object.keys(this.chunks)
+
+                    for (const fileId of fileIds) {
+                        if (this.isCancelled) break;
                         if (this.uploadedChunks[fileId] !== undefined) continue;
 
                         this.uploadedChunks[fileId] = 0;
 
-                        for (const chunk of fileChunks) {
-                            if (this.isCancelled) return;
+                        await this.processFile(fileId)
+                    }
 
-                            const onUploadComplete = () => {
-                                if (this.isCancelled) return;
-
-                                this.uploadedChunks[fileId]++;
-
-                                // If all chunks are uploaded, merge them
-                                if (this.uploadedChunks[fileId] === this.chunks[fileId].length) {
-                                    _this.call('mergeChunks', fileId);
-
-                                    delete this.chunks[fileId];
-                                    delete this.uploadedChunks[fileId];
-
-                                    if (Object.keys(this.chunks).length === 0) {
-                                        this.isLoading = false;
-                                    }
-                                }
-                            };
-
-                            const onUploadError = (error) => {
-                                this.isLoading = false;
-                                delete this.chunks[fileId];
-                                delete this.uploadedChunks[fileId];
-
-                                console.error('livewire-dropzone upload error', error);
-                            };
-
-                            const onUploading = () => {
-                                this.isLoading = true;
-                            };
-
-                            const args = ['chunk', chunk, onUploadComplete, onUploadError, onUploading, { headers: { 'X-File-Id': fileId } }];
-
-                            _this.upload(...args);
+                    if (this.isCancelled || Object.keys(this.chunks).length === 0) {
+                        this.isLoading = false
+                    }
+                },
+                uploadChunk(fileId, chunk) {
+                    return new Promise((resolve, reject) => {
+                        const onUploadComplete = () => {
+                            if (this.isCancelled) {
+                                return resolve('cancelled')
+                            }
+                            this.uploadedChunks[fileId]++
+                            resolve()
                         }
+
+                        const onUploadError = (error) => {
+                            console.error('livewire-dropzone upload error', error)
+                            reject(error)
+                        }
+
+                        const onUploading = () => {
+                            this.isLoading = true
+                        }
+
+                        const args = ['chunk', chunk, onUploadComplete, onUploadError, onUploading, { headers: { 'X-File-Id': fileId } }]
+                        _this.upload(...args)
+                    })
+                },
+                async processFile(fileId) {
+                    const fileChunks = this.chunks[fileId] || []
+
+                    for (let i = 0; i < fileChunks.length; i++) {
+                        if (this.isCancelled) {
+                            try { _this.cancelUpload('chunk') } catch (e) {}
+                            break
+                        }
+
+                        try {
+                            await this.uploadChunk(fileId, fileChunks[i])
+                        } catch (e) {
+                            this.isLoading = false
+                            delete this.chunks[fileId]
+                            delete this.uploadedChunks[fileId]
+                            return
+                        }
+                    }
+
+                    if (!this.isCancelled && this.uploadedChunks[fileId] === (this.chunks[fileId]?.length || 0)) {
+                        _this.call('mergeChunks', fileId)
+
+                        delete this.chunks[fileId]
+                        delete this.uploadedChunks[fileId]
+                    }
+
+                    if (Object.keys(this.chunks).length === 0) {
+                        this.isLoading = false
                     }
                 },
             });

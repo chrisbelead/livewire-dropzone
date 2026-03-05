@@ -17,7 +17,7 @@
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="dz-w-5 dz-h-5 dz-text-red-400 dz-dark:text-red-200">
                         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd" />
                     </svg>
-                    <h3 class="dz-text-sm dz-text-red-800 dz-font-medium dz-dark:text-red-100">{{ $error }}</h3>
+                    <h3 class="dz-text-sm dz-text-red-800 dz-font-medium dz-dark:text-red-100 mb-0">{{ $error }}</h3>
                 </div>
             </div>
         @endif
@@ -205,7 +205,7 @@
                         const end = Math.min(start + chunkSize, file.size);
                         const chunk = file.slice(start, end);
                         const chunkNo = Math.ceil(start / chunkSize) + 1;
-                        chunk.name = `${file.name}.${chunkNo}.part`;
+                        chunk.name = `${fileId}.${file.name}.${chunkNo}.part`;
                         this.chunks[fileId].push(chunk);
                         start = end;
                     }
@@ -256,7 +256,7 @@
                             this.isLoading = true
                         }
 
-                        const args = ['chunk', chunk, onUploadComplete, onUploadError, onUploading, { headers: { 'X-File-Id': fileId } }]
+                        const args = ['chunk', chunk, onUploadComplete, onUploadError, onUploading]
                         _this.upload(...args)
                     })
                 },

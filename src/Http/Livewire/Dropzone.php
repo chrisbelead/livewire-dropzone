@@ -60,13 +60,11 @@ class Dropzone extends Component
      */
     public function updatedChunk($value): void
     {
-        $fileId = request()->header('X-File-Id');
+        // On extrait l'ID unique au début du nom du chunk (format: {fileId}.{originalName}.{chunkNo}.part)
+        preg_match('/^([a-z0-9]+)\./', $value->getClientOriginalName(), $matches);
+        $fileId = $matches[1] ?? 'default';
 
-        if ($fileId) {
-            $this->chunks[$fileId][] = $value;
-        } else {
-            $this->chunks[] = $value;
-        }
+        $this->chunks[$fileId][] = $value;
     }
 
     /**
@@ -80,16 +78,17 @@ class Dropzone extends Component
 
         $chunks = $fileId && isset($this->chunks[$fileId]) 
             ? $this->chunks[$fileId] 
-            : $this->chunks;
+            : null;
 
         if (empty($chunks)) {
             return; // Rien à merger
         }
 
-        // 1) Déduire le nom original (sans ".N.part") à partir du premier chunk
-        $originalName = preg_replace('/\.\d+\.part$/', '', $chunks[0]->getClientOriginalName());
+        // 1) Déduire le nom original (on retire l'ID au début et le suffixe .N.part)
+        // Format: {fileId}.{originalName}.{chunkNo}.part
+        $originalName = preg_replace('/^[a-z0-9]+\.(.+)\.\d+\.part$/', '$1', $chunks[0]->getClientOriginalName());
 
-        // 2) Générer un nom Livewire (même logique que votre code) pour le fichier final
+        // 2) Générer un nom Livewire pour le fichier final
         $finalBasename = TemporaryUploadedFile::generateHashNameWithOriginalNameEmbedded(
             UploadedFile::fake()->create($originalName)
         );

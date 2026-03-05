@@ -127,6 +127,13 @@ class Dropzone extends Component
             $this->validate();
         } catch (ValidationException $e) {
             $this->dispatch("{$this->uuid}:uploadError", $e->getMessage());
+
+            if ($fileId) {
+                unset($this->chunks[$fileId]);
+            } else {
+                $this->reset('chunks');
+            }
+
             return;
         }
 

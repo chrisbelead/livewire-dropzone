@@ -7,6 +7,7 @@
         @dragleave.prevent="isDragging = false"
         @dragover.prevent="isDragging = true"
         @drop.prevent="onDrop"
+        @js($uuid . ':uploadError').window="onUploadError"
         class="dz-block dz-antialiased"
 >
     <div class="dz-flex dz-flex-col dz-items-start dz-h-full dz-w-full dz-justify-center dz-bg-transparent dz-dark:border-gray-600 dz-dark:hover:border-gray-500">
@@ -128,9 +129,19 @@
                 isLoading: false,
                 isCancelled: false,
                 progress: 0,
+                onUploadError() {
+                    this.chunks = {};
+                    this.uploadedChunks = {};
+                    this.isLoading = false
+                    this.progress = 0
 
+                    if (this.$refs.input) {
+                        this.$refs.input.value = ''
+                    }
+                },
                 onChange(e) {
                     this.isCancelled = false
+                    this.progress = 0
                     const files = [...e.target.files];
 
                     files.forEach((file) => {
@@ -139,10 +150,15 @@
                     });
 
                     this.uploadChunks()
+
+                    if (this.$refs.input) {
+                        this.$refs.input.value = ''
+                    }
                 },
                 onDrop(e) {
                     this.isCancelled = false
                     this.isDragging = false
+                    this.progress = 0
 
                     const files = [...e.dataTransfer.files]
 
@@ -152,6 +168,10 @@
                     });
 
                     this.uploadChunks()
+
+                    if (this.$refs.input) {
+                        this.$refs.input.value = ''
+                    }
                 },
                 cancelUpload() {
                     this.isCancelled = true
